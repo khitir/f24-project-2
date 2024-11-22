@@ -395,12 +395,35 @@ Returns: (VALUES maxterms (CONS literal bindings))"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun dpll-unit-propagate (maxterms bindings)
-"DPLL unit propogation.
-Returns: (VALUES maxterms (LIST bindings-literals...))"
+  "DPLL unit propagation.
+  Returns: (VALUES maxterms (LIST bindings-literals...))"
+  ;; Ensure all elements in maxterms are valid maxterms
   (assert (every #'maxterm-p maxterms))
+  ;; Ensure all elements in bindings are valid literals
   (assert (every #'lit-p bindings))
-  ;; HINT: use DPLL-BIND
-  (TODO 'dpll-unit-propagate))
+  ;; Initialize new-maxterms and new-bindings with the provided maxterms and bindings
+  (let ((new-maxterms maxterms)
+        (new-bindings bindings))
+    ;; Loop until no more unit clauses are found
+    (loop
+      ;; Find a unit clause in new-maxterms
+      (let ((unit-clause (find-if #'maxterm-unit-p new-maxterms)))
+        (if unit-clause
+            ;; If a unit clause is found
+            (let ((literal (second unit-clause)))
+              ;; Bind the literal
+              (multiple-value-bind (updated-maxterms updated-bindings)
+                  ;; Perform the binding and propagation
+                  (dpll-bind new-maxterms literal new-bindings)
+                ;; Update new-maxterms and new-bindings with the results of dpll-bind
+                (setq new-maxterms updated-maxterms)
+                (setq new-bindings updated-bindings)
+                ;; Check for conflict in the updated maxterms
+                (if (some #'maxterm-false-p new-maxterms)
+                    ;; If a conflict is found, return the current state
+                    (return (values new-maxterms new-bindings)))))
+            ;; If no more unit clauses are found, return the current state
+            (return (values new-maxterms new-bindings)))))))
 
 
 (defun dpll-choose-literal (maxterms)
